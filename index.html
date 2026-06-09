@@ -84,6 +84,53 @@
     main { padding: 24px 14px; gap: 36px; }
     .cards-grid { grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); }
   }
+
+.sections-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.bonus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bonus-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: var(--surface);
+  border: 1px solid var(--border);
+
+  border-radius: 6px;
+
+  padding: 8px 12px;
+}
+
+.bonus-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bonus-check {
+  width: 16px;
+  height: 16px;
+}
+
+#overall-progress {
+  justify-content: center;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .sections-wrap {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 </head>
 <body>
@@ -100,29 +147,51 @@
 <main>
   <div class="legend" id="global-legend"></div>
 
-  <section>
-    <div class="section-header">
-      <h2>Unit Bonuses</h2>
-      <span class="section-count" id="unit-count"></span>
-    </div>
-    <div class="filter-bar" id="unit-filters"></div>
-    <div class="cards-grid" id="unit-grid"><div class="state-msg"><div class="spinner"></div>Loading…</div></div>
-  </section>
+  <div id="overall-progress" class="legend">
+    Loading progress...
+  </div>
 
-  <section>
-    <div class="section-header">
-      <h2>Strafe Bonuses</h2>
-      <span class="section-count" id="strafe-count"></span>
-    </div>
-    <div class="filter-bar" id="strafe-filters"></div>
-    <div class="cards-grid" id="strafe-grid"><div class="state-msg"><div class="spinner"></div>Loading…</div></div>
-  </section>
+  <div class="sections-wrap">
+
+    <section>
+      <div class="section-header">
+        <h2>Unit Bonuses</h2>
+        <span class="section-count" id="unit-count"></span>
+      </div>
+
+      <div class="filter-bar" id="unit-filters"></div>
+
+      <div class="bonus-list" id="unit-grid"></div>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <h2>Strafe Bonuses</h2>
+        <span class="section-count" id="strafe-count"></span>
+      </div>
+
+      <div class="filter-bar" id="strafe-filters"></div>
+
+      <div class="bonus-list" id="strafe-grid"></div>
+    </section>
+
+  </div>
 </main>
 
 <script>
 const SHEET_ID  = '1Hft-1XdK7lge5WWqP5hrNsSUJw_Ss2PS-t-c3CTawpQ';
 const SHEET_GID = '66128315';
 const CSV_URL   = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+
+const progress =
+  JSON.parse(localStorage.getItem("bonus-progress") || "{}");
+
+function saveProgress() {
+  localStorage.setItem(
+    "bonus-progress",
+    JSON.stringify(progress)
+  );
+}
 
 const TIER_META = [
   { key: 'Y+',  color: '#f5e642' },
@@ -200,25 +269,72 @@ function esc(s) {
 }
 
 function makeCard(item) {
-  const color = tierColor(item.tier);
-  const card  = document.createElement('div');
-  card.className = 'card';
-  card.style.setProperty('--tier-color', color);
-  card.dataset.tier = item.tier;
+  const row = document.createElement("div");
 
-  const videoHtml = item.linkHref
-    ? `<a class="video-link" href="${esc(item.linkHref)}" target="_blank" rel="noopener">▶ Video</a>`
-    : item.hasLink
-      ? `<span class="video-link no-link" title="Open the Google Sheet for this link">▶ Link</span>`
-      : `<span class="video-link no-link">—</span>`;
+  row.className = "bonus-row";
 
-  card.innerHTML = `
-    <div class="card-name">${esc(item.name)}</div>
-    <div class="card-footer">
-      <span class="tier-badge">${esc(item.tier)}</span>
-      ${videoHtml}
-    </div>`;
-  return card;
+  row.dataset.tier = item.tier;
+
+  const checked =
+    progress[item.name] ? "checked" : "";
+
+  row.innerHTML = `
+    <div class="bonus-left">
+
+      <input
+        type="checkbox"
+        class="bonus-check"
+        data-name="${esc(item.name)}"
+        ${checked}
+      >
+
+      <span>${esc(item.name)}</span>
+
+    </div>
+
+    <span class="tier-badge">
+      ${esc(item.tier)}
+    </span>
+  `;
+
+  const checkbox =
+    row.querySelector(".bonus-check");
+
+  checkbox.addEventListener("change", () => {
+
+    progress[item.name] =
+      checkbox.checked;
+
+    saveProgress();
+
+    updateOverallProgress();
+  });
+
+  return row;
+}
+
+function updateOverallProgress() {
+
+  const total =
+    document.querySelectorAll(".bonus-check")
+      .length;
+
+  const completed =
+    document.querySelectorAll(
+      ".bonus-check:checked"
+    ).length;
+
+  const percent =
+    total
+      ? ((completed / total) * 100).toFixed(1)
+      : 0;
+
+  document.getElementById(
+    "overall-progress"
+  ).innerHTML =
+    `<strong>Overall Progress:</strong>
+     ${completed}/${total}
+     (${percent}%)`;
 }
 
 function renderSection(items, gridId, countId, filterId) {
@@ -255,6 +371,7 @@ function renderSection(items, gridId, countId, filterId) {
   });
 
   items.forEach(item => grid.appendChild(makeCard(item)));
+updateOverallProgress();
   countEl.textContent = `${items.length} entries`;
 
   let active = 'all';
@@ -325,40 +442,11 @@ async function loadData() {
   document.getElementById('last-updated').textContent = '…';
 
   try {
-    const response = await fetch(CSV_URL);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const csv  = await fetchCSV();
+    const rows = parseCSV(csv);
 
-    const csv = await response.text();
-
-    const rows = csv
-      .split(/\r?\n/)
-      .map(row =>
-        row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(cell =>
-          cell.replace(/^"|"$/g, '').trim()
-        ) || []
-      );
-
-    const unitBonuses = [];
-    const strafeBonuses = [];
-
-    for (const row of rows) {
-      const unitName = row[3]?.trim();
-      const unitTier = row[4]?.trim();
-
-      if (unitName && unitTier && unitName !== 'Bonus' && unitTier !== 'Tier') {
-        unitBonuses.push({ name: unitName, tier: normalizeTier(unitTier) });
-      }
-
-      const strafeName = row[7]?.trim();
-      const strafeTier = row[8]?.trim();
-
-      if (strafeName && strafeTier && strafeName !== 'Bonus' && strafeTier !== 'Tier') {
-        strafeBonuses.push({ name: strafeName, tier: normalizeTier(strafeTier) });
-      }
-    }
-
-    renderSection(unitBonuses, 'unit-grid', 'unit-count', 'unit-filters');
-    renderSection(strafeBonuses, 'strafe-grid', 'strafe-count', 'strafe-filters');
+    renderSection(extractSection(rows, 3, 4, 5), 'unit-grid',   'unit-count',   'unit-filters');
+    renderSection(extractSection(rows, 7, 8, 9), 'strafe-grid', 'strafe-count', 'strafe-filters');
 
     document.getElementById('last-updated').textContent =
       new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -369,7 +457,6 @@ async function loadData() {
         `<div class="state-msg error">Failed to load data.<span class="err-detail">${esc(err.message)}</span></div>`;
     });
     document.getElementById('last-updated').textContent = 'error';
-    console.error(err);
   }
 }
 
