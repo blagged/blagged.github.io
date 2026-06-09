@@ -276,18 +276,18 @@ function saveProgress() {
 }
 
 const TIER_META = [
-  { key: 'Y+',  color: '#f5e642' },
-  { key: 'Y',   color: '#d4af37' },
-  { key: 'X++', color: '#c0392b' },
-  { key: 'X+',  color: '#e05c1a' },
-  { key: 'X',   color: '#2471a3' },
-  { key: 'S++', color: '#9b59b6' },
-  { key: 'S+',  color: '#7d3c98' },
-  { key: 'S',   color: '#6c3483' },
-  { key: 'A',   color: '#1a8a4a' },
-  { key: 'B',   color: '#2e86c1' },
-  { key: 'C',   color: '#7a7a7a' },
-  { key: 'D',   color: '#555555' },
+  { key: 'Y+',  color: '#ff1c1c' },
+  { key: 'Y',   color: '#ff1c3e' },
+  { key: 'X++', color: '#ff1c68' },
+  { key: 'X+',  color: '#ff1c91' },
+  { key: 'X',   color: '#ff1cce' },
+  { key: 'S++', color: '#e51cff' },
+  { key: 'S+',  color: '#c21cff' },
+  { key: 'S',   color: '#9d1cff' },
+  { key: 'A',   color: '#331cff' },
+  { key: 'B',   color: '#1c95ff' },
+  { key: 'C',   color: '#1cffff' },
+  { key: 'D',   color: '#1cff86' },
 ];
 const TIER_ORDER = TIER_META.map(t => t.key);
 
@@ -331,7 +331,6 @@ function parseCSV(text) {
 }
 
 function extractSection(rows, nameCol, tierCol, linkCol) {
-console.log("DEBUG ROW:", r, name, tierRaw, "=>", tier);
   const items = [];
   for (let r = 3; r < rows.length; r++) {
     const row  = rows[r] || [];
@@ -339,9 +338,13 @@ const name = (row[nameCol] || '').trim();
 const tierRaw = (row[tierCol] || '').trim();
 const tier = normalizeTier(tierRaw);
 
-const tier = normalizeTier(tierRaw);
-
-if (!name || !tier) continue;
+if (!name) continue;
+if (!tier) continue;
+if (name.toLowerCase() === 'bonus') continue;
+    const linkText = (row[linkCol] || '').trim();
+    const hasLink  = linkText.toLowerCase() === 'link' || linkText.startsWith('http');
+    const linkHref = linkText.startsWith('http') ? linkText : null;
+    items.push({ name, tier, hasLink, linkHref });
   }
   return items;
 }
