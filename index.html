@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bonus Tiers</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0d0f14;
+    --surface: #13161e;
+    --panel:   #1a1e29;
+    --border:  #252a38;
+    --text:    #c8cdd8;
+    --muted:   #5a6175;
+    --white:   #eef0f5;
+    --accent:  #4a9eff;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 28px 32px 24px;
+    display: flex; flex-direction: column; gap: 6px;
+    background: linear-gradient(180deg, #0a0c11 0%, var(--bg) 100%);
+  }
+  header h1 { font-family: 'Rajdhani', sans-serif; font-size: clamp(22px,4vw,36px); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--white); }
+  header h1 span { color: var(--accent); }
+  .header-meta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .header-meta small { color: var(--muted); font-size: 12px; }
+  #last-updated { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .refresh-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 11px; font-family: 'Inter',sans-serif; padding: 3px 10px; border-radius: 4px; cursor: pointer; transition: color .2s, border-color .2s; letter-spacing: .05em; text-transform: uppercase; }
+  .refresh-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 24px; display: flex; flex-direction: column; gap: 48px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+  .legend-label { font-family: 'Rajdhani',sans-serif; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+
+  .tier-pill { font-family: 'Rajdhani',sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .08em; padding: 3px 10px; border-radius: 3px; cursor: pointer; border: 1px solid transparent; transition: opacity .15s, transform .1s; user-select: none; }
+  .tier-pill.active   { opacity: 1; }
+  .tier-pill.inactive { opacity: 0.3; }
+  .tier-pill.static   { cursor: default; opacity: 1; }
+  .tier-pill:not(.static):hover { opacity: .85; }
+
+  .section-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+  .section-header h2 { font-family: 'Rajdhani',sans-serif; font-size: 22px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--white); }
+  .section-count { font-size: 12px; color: var(--muted); }
+  .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 10px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; transition: border-color .2s, transform .15s; position: relative; overflow: hidden; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--tier-color, var(--border)); }
+  .card:hover { border-color: var(--tier-color, var(--border)); transform: translateY(-1px); }
+  .card[data-hidden="true"] { display: none; }
+  .card-name { font-family: 'Rajdhani',sans-serif; font-size: 15px; font-weight: 600; color: var(--white); letter-spacing: .04em; line-height: 1.2; word-break: break-word; }
+  .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .tier-badge { font-family: 'Rajdhani',sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--tier-color, var(--muted)); background: color-mix(in srgb, var(--tier-color,#555) 12%, transparent); padding: 2px 7px; border-radius: 3px; border: 1px solid color-mix(in srgb, var(--tier-color,#555) 30%, transparent); }
+  .video-link { font-size: 11px; font-family: 'Rajdhani',sans-serif; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); text-decoration: none; padding: 2px 7px; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 3px; background: color-mix(in srgb, var(--accent) 8%, transparent); transition: background .15s; }
+  .video-link:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .video-link.no-link { color: var(--muted); border-color: transparent; background: none; pointer-events: none; }
+
+  .state-msg { text-align: center; padding: 60px 20px; color: var(--muted); font-family: 'Rajdhani',sans-serif; font-size: 16px; letter-spacing: .08em; text-transform: uppercase; grid-column: 1/-1; }
+  .state-msg.error { color: #c0392b; }
+  .state-msg.error .err-detail { display: block; font-size: 12px; letter-spacing: .03em; margin-top: 8px; color: #8a3a3a; text-transform: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 16px; }
+
+  @media (max-width:600px) {
+    header { padding: 20px 16px 16px; }
+    main { padding: 24px 14px; gap: 36px; }
+    .cards-grid { grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bonus <span>Tiers</span></h1>
+  <div class="header-meta">
+    <small>Source: <em>Bonus Tiers by Xtra, poorly edited by william</em></small>
+    <small>Updated: <span id="last-updated">—</span></small>
+    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+  </div>
+</header>
+
+<main>
+  <div class="legend" id="global-legend"></div>
+
+  <section>
+    <div class="section-header">
+      <h2>Unit Bonuses</h2>
+      <span class="section-count" id="unit-count"></span>
+    </div>
+    <div class="filter-bar" id="unit-filters"></div>
+    <div class="cards-grid" id="unit-grid"><div class="state-msg"><div class="spinner"></div>Loading…</div></div>
+  </section>
+
+  <section>
+    <div class="section-header">
+      <h2>Strafe Bonuses</h2>
+      <span class="section-count" id="strafe-count"></span>
+    </div>
+    <div class="filter-bar" id="strafe-filters"></div>
+    <div class="cards-grid" id="strafe-grid"><div class="state-msg"><div class="spinner"></div>Loading…</div></div>
+  </section>
+</main>
+
+<script>
+const SHEET_ID  = '1Hft-1XdK7lge5WWqP5hrNsSUJw_Ss2PS-t-c3CTawpQ';
+const SHEET_GID = '66128315';
+const CSV_URL   = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+
+const TIER_META = [
+  { key: 'Y+',  color: '#f5e642' },
+  { key: 'Y',   color: '#d4af37' },
+  { key: 'X++', color: '#c0392b' },
+  { key: 'X+',  color: '#e05c1a' },
+  { key: 'X',   color: '#2471a3' },
+  { key: 'S++', color: '#9b59b6' },
+  { key: 'S+',  color: '#7d3c98' },
+  { key: 'S',   color: '#6c3483' },
+  { key: 'A',   color: '#1a8a4a' },
+  { key: 'B',   color: '#2e86c1' },
+  { key: 'C',   color: '#7a7a7a' },
+  { key: 'D',   color: '#555555' },
+];
+const TIER_ORDER = TIER_META.map(t => t.key);
+
+function tierColor(key) {
+  const t = TIER_META.find(m => m.key === key);
+  return t ? t.color : '#666';
+}
+
+function normalizeTier(raw) {
+  if (!raw) return '';
+  return raw.trim().replace(/\s*tier\s*/gi, '').replace(/\s+/g,'').toUpperCase();
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let i = 0, n = text.length;
+  while (i < n) {
+    const row = [];
+    while (i < n && text[i] !== '\n' && text[i] !== '\r') {
+      if (text[i] === '"') {
+        let cell = ''; i++;
+        while (i < n) {
+          if (text[i] === '"' && text[i+1] === '"') { cell += '"'; i += 2; }
+          else if (text[i] === '"') { i++; break; }
+          else cell += text[i++];
+        }
+        row.push(cell);
+        if (text[i] === ',') i++;
+      } else {
+        let cell = '';
+        while (i < n && text[i] !== ',' && text[i] !== '\n' && text[i] !== '\r') cell += text[i++];
+        row.push(cell.trim());
+        if (text[i] === ',') i++;
+      }
+    }
+    if (text[i] === '\r') i++;
+    if (text[i] === '\n') i++;
+    rows.push(row);
+  }
+  return rows;
+}
+
+function extractSection(rows, nameCol, tierCol, linkCol) {
+  const items = [];
+  for (let r = 3; r < rows.length; r++) {
+    const row  = rows[r] || [];
+    const name = (row[nameCol] || '').trim();
+    const tier = normalizeTier(row[tierCol] || '');
+    if (!name || name.toLowerCase() === 'bonus') continue;
+    if (!tier) continue;
+    const linkText = (row[linkCol] || '').trim();
+    const hasLink  = linkText.toLowerCase() === 'link' || linkText.startsWith('http');
+    const linkHref = linkText.startsWith('http') ? linkText : null;
+    items.push({ name, tier, hasLink, linkHref });
+  }
+  return items;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function makeCard(item) {
+  const color = tierColor(item.tier);
+  const card  = document.createElement('div');
+  card.className = 'card';
+  card.style.setProperty('--tier-color', color);
+  card.dataset.tier = item.tier;
+
+  const videoHtml = item.linkHref
+    ? `<a class="video-link" href="${esc(item.linkHref)}" target="_blank" rel="noopener">▶ Video</a>`
+    : item.hasLink
+      ? `<span class="video-link no-link" title="Open the Google Sheet for this link">▶ Link</span>`
+      : `<span class="video-link no-link">—</span>`;
+
+  card.innerHTML = `
+    <div class="card-name">${esc(item.name)}</div>
+    <div class="card-footer">
+      <span class="tier-badge">${esc(item.tier)}</span>
+      ${videoHtml}
+    </div>`;
+  return card;
+}
+
+function renderSection(items, gridId, countId, filterId) {
+  const grid     = document.getElementById(gridId);
+  const countEl  = document.getElementById(countId);
+  const filterEl = document.getElementById(filterId);
+  grid.innerHTML = filterEl.innerHTML = '';
+
+  if (!items.length) {
+    grid.innerHTML = '<div class="state-msg">No data found.</div>';
+    return;
+  }
+
+  const present = [...new Set(items.map(i => i.tier))].filter(Boolean);
+  const ordered = TIER_ORDER.filter(k => present.includes(k));
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'tier-pill active';
+  allBtn.style.cssText = 'background:#1a1e29;color:#c8cdd8;border-color:#252a38';
+  allBtn.textContent = 'All';
+  allBtn.dataset.tier = 'all';
+  filterEl.appendChild(allBtn);
+
+  ordered.forEach(t => {
+    const col = tierColor(t);
+    const btn = document.createElement('button');
+    btn.className = 'tier-pill active';
+    btn.style.background  = col + '22';
+    btn.style.color       = col;
+    btn.style.borderColor = col + '66';
+    btn.textContent = t;
+    btn.dataset.tier = t;
+    filterEl.appendChild(btn);
+  });
+
+  items.forEach(item => grid.appendChild(makeCard(item)));
+  countEl.textContent = `${items.length} entries`;
+
+  let active = 'all';
+  filterEl.addEventListener('click', e => {
+    const btn = e.target.closest('.tier-pill');
+    if (!btn) return;
+    active = btn.dataset.tier;
+    filterEl.querySelectorAll('.tier-pill').forEach(b => {
+      const match = active === 'all' || b.dataset.tier === active || b.dataset.tier === 'all';
+      b.classList.toggle('active',   match);
+      b.classList.toggle('inactive', !match);
+    });
+    let visible = 0;
+    grid.querySelectorAll('.card').forEach(card => {
+      const hide = active !== 'all' && card.dataset.tier !== active;
+      card.dataset.hidden = hide ? 'true' : 'false';
+      if (!hide) visible++;
+    });
+    countEl.textContent = active === 'all'
+      ? `${items.length} entries`
+      : `${visible} / ${items.length} entries`;
+  });
+}
+
+function renderLegend() {
+  const el = document.getElementById('global-legend');
+  el.innerHTML = `<span class="legend-label">Tiers:</span>`;
+  TIER_META.forEach(t => {
+    const p = document.createElement('span');
+    p.className = 'tier-pill static';
+    p.style.background  = t.color + '22';
+    p.style.color       = t.color;
+    p.style.borderColor = t.color + '66';
+    p.textContent = t.key;
+    el.appendChild(p);
+  });
+}
+
+async function fetchCSV() {
+  try {
+    const r = await fetch(CSV_URL);
+    if (r.ok) return await r.text();
+  } catch(_) {}
+
+  try {
+    const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(CSV_URL)}`);
+    if (r.ok) { const j = await r.json(); if (j.contents) return j.contents; }
+  } catch(_) {}
+
+  try {
+    const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(CSV_URL)}`);
+    if (r.ok) return await r.text();
+  } catch(_) {}
+
+  try {
+    const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(CSV_URL)}`);
+    if (r.ok) return await r.text();
+  } catch(_) {}
+
+  throw new Error('Could not reach the Google Sheet. Check your internet connection.');
+}
+
+async function loadData() {
+  ['unit-grid','strafe-grid'].forEach(id => {
+    document.getElementById(id).innerHTML =
+      '<div class="state-msg"><div class="spinner"></div>Loading…</div>';
+  });
+  document.getElementById('last-updated').textContent = '…';
+
+  try {
+    const response = await fetch(CSV_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const csv = await response.text();
+
+    const rows = csv
+      .split(/\r?\n/)
+      .map(row =>
+        row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(cell =>
+          cell.replace(/^"|"$/g, '').trim()
+        ) || []
+      );
+
+    const unitBonuses = [];
+    const strafeBonuses = [];
+
+    for (const row of rows) {
+      const unitName = row[3]?.trim();
+      const unitTier = row[4]?.trim();
+
+      if (unitName && unitTier && unitName !== 'Bonus' && unitTier !== 'Tier') {
+        unitBonuses.push({ name: unitName, tier: normalizeTier(unitTier) });
+      }
+
+      const strafeName = row[7]?.trim();
+      const strafeTier = row[8]?.trim();
+
+      if (strafeName && strafeTier && strafeName !== 'Bonus' && strafeTier !== 'Tier') {
+        strafeBonuses.push({ name: strafeName, tier: normalizeTier(strafeTier) });
+      }
+    }
+
+    renderSection(unitBonuses, 'unit-grid', 'unit-count', 'unit-filters');
+    renderSection(strafeBonuses, 'strafe-grid', 'strafe-count', 'strafe-filters');
+
+    document.getElementById('last-updated').textContent =
+      new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  } catch(err) {
+    ['unit-grid','strafe-grid'].forEach(id => {
+      document.getElementById(id).innerHTML =
+        `<div class="state-msg error">Failed to load data.<span class="err-detail">${esc(err.message)}</span></div>`;
+    });
+    document.getElementById('last-updated').textContent = 'error';
+    console.error(err);
+  }
+}
+
+renderLegend();
+loadData();
+setInterval(loadData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
