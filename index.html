@@ -334,10 +334,13 @@ function extractSection(rows, nameCol, tierCol, linkCol) {
   const items = [];
   for (let r = 3; r < rows.length; r++) {
     const row  = rows[r] || [];
-    const name = (row[nameCol] || '').trim();
-    const tier = normalizeTier(row[tierCol] || '');
-    if (!name || name.toLowerCase() === 'bonus') continue;
-    if (!tier) continue;
+const name = (row[nameCol] || '').trim();
+const tierRaw = (row[tierCol] || '').trim();
+const tier = normalizeTier(tierRaw);
+
+if (!name) continue;
+if (!tier) continue;
+if (name.toLowerCase() === 'bonus') continue;
     const linkText = (row[linkCol] || '').trim();
     const hasLink  = linkText.toLowerCase() === 'link' || linkText.startsWith('http');
     const linkHref = linkText.startsWith('http') ? linkText : null;
