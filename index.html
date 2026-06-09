@@ -383,10 +383,6 @@ row.style.setProperty(
     ✓
   </span>
 
-  <span>
-    ${esc(item.name)}
-  </span>
-
 </label>
 
       <span>${esc(item.name)}</span>
@@ -495,17 +491,17 @@ updateOverallProgress();
     });
     let visible = 0;
     grid.querySelectorAll('.bonus-row').forEach(row => {
+      const hide =
+        active !== 'all' &&
+        row.dataset.tier !== active;
 
-  const hide =
-    active !== 'all' &&
-    row.dataset.tier !== active;
+      row.style.display = hide ? 'none' : 'flex';
 
-  row.style.display =
-    hide ? 'none' : 'flex';
+      if (!hide) visible++;
+    });
 
-  if (!hide)
-    visible++;
-});
+    countEl.textContent = `${visible} / ${items.length} entries`;
+  });
 }
 
 function renderLegend() {
